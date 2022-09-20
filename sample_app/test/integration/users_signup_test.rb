@@ -2,6 +2,10 @@ require 'test_helper'
 
 class UsersSignupTest < ActionDispatch::IntegrationTest
 
+  def setup
+    ActionMailer::Base.deliveries.clear
+  end
+
   # フォームで入力に失敗した時のテスト
   test "invalid signup information" do
     
@@ -24,7 +28,7 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
   end
   
   # フォームで入力に成功した時のテスト
-  test "valid signup information" do
+  test "valid signup information with account activation" do
 
     
     ## ユーザが追加されること
@@ -35,14 +39,23 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
                                          password:              "password",
                                          password_confirmation: "password" } }
     end
-
+    assert_equal 2, ActionMailer::Base.deliveries.size
+    user = assigns(:user)   # Usersコントローラのcreateアクションで定義している@userにアクセス
+    assert_not user.activated?
+    ## 有効化していない状態でログインしてみる
+    log_in_as(user)
+    assert_not is_logged_in?
+    ## 有効化トークンが不正な場合
+    get edit_account_activation_path("invalid token", email: user.email)
+    assert_not is_logged_in?
+    ## トークンは正しいがメールアドレスが無効な場合
+    get edit_account_activation_path(user.activation_token, email: 'wrong')
+    assert_not is_logged_in?
+    ## 有効化トークンが正しい場合
+    get edit_account_activation_path(user.activation_token, email: user.email)
+    assert user.reload.activated?
     follow_redirect!
     assert_template 'users/show'
-
-    ## ログイン状態になっていること
     assert is_logged_in?
-
-    ## ユーザ登録成功時のメッセージが表示されること（空でないこと）
-    assert_not flash.empty?
   end
 end
