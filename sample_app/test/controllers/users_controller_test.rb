@@ -90,4 +90,16 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to root_url
   end
+
+  # ログアウト状態でfollowingページにアクセスした時の確認
+  test "should redirect following when not logged in" do
+    get following_user_path(@user)
+    assert_redirected_to login_url
+  end
+
+  # ログアウト状態でfollowersページにアクセスした時の確認
+  test "should redirect followers when not logged in" do
+    get followers_user_path(@user)
+    assert_redirected_to login_url
+  end
 end
