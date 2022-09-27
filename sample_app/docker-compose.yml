@@ -1,0 +1,37 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - 80:3000
+    volumes:
+      - .:/usr/src/rails_tutorial:cached
+      - ~/.ssh:/root/.ssh
+      - gem-data:/usr/local/bundle
+    environment:
+      DATABASE_URL: mysql2://db
+      DATABASE_READ_HOST: db
+    depends_on:
+      - db
+    tty: true
+    stdin_open: true
+    command: bash -c "rm -rf tmp/pids/server.pid && bundle exec rails s -b '0.0.0.0'"
+
+  db:
+    image: mysql:5.7
+    platform: linux/amd64
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    command: --sql-mode=""
+
+volumes:
+  db-data:
+    driver: local
+  gem-data:
+    driver: local
+
